@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSK6 成语对对碰</title>
+    <style>
+        /* 基础样式与变量定义 */
+        :root {
+            --primary: #2563eb; /* 主色调：蓝色 */
+            --success: #10b981; /* 匹配成功色：绿色 */
+            --bg-light: #f8fafc; /* 页面背景色 */
+            --card-bg: #ffffff; /* 卡片背景色 */
+            --text-dark: #1e293b; /* 文字深色 */
+            --text-light: #ffffff; /* 文字浅色 */
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 基础阴影 */
+            --transition: all 0.3s ease; /* 过渡动画 */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Roboto', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 游戏头部样式 */
+        .game-header {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-title {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-around;
+            background: var(--card-bg);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        .game-controls {
+            margin-bottom: 20px;
+        }
+
+        .reset-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: var(--primary);
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .reset-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        /* 卡片网格样式 */
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            perspective: 1200px; /* 3D翻转视角基础 */
+        }
+
+        .card-grid {
+            display: grid;
+            /* 自适应列数：最小120px/列，最多6列，自动填充 */
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        /* 移动端适配：缩小卡片尺寸和间距 */
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 8px;
+            }
+        }
+
+        /* 卡片核心样式（含3D翻转） */
+        .card {
+            position: relative;
+            height: 100px;
+            cursor: pointer;
+            transform-style: preserve-3d; /* 开启3D空间 */
+            transition: transform 0.5s ease; /* 翻转动画 */
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            outline: none;
+            border: 2px solid transparent;
+        }
+
+        /* 移动端卡片高度适配 */
+        @media (max-width: 768px) {
+            .card {
+                height: 80px;
+            }
+        }
+
+        /* 卡片聚焦样式（无障碍支持） */
+        .card:focus {
+            border-color: var(--primary);
+        }
+
+        /* 卡片翻转状态 */
+        .card.flipped {
+            transform: rotateY(180deg); /* Y轴翻转180度 */
+        }
+
+        /* 匹配成功动画 */
+        .card.matched {
+            animation: match 0.6s ease-in-out;
+        }
+
+        /* 匹配失败震动动画 */
+        .card.error {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        /* 卡片正反面通用样式 */
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* 隐藏背面（翻转后不可见） */
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            text-align: center;
+        }
+
+        /* 卡片背面样式 */
+        .card-back {
+            background: var(--primary);
+            color: var(--text-light);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* 卡片正面样式（默认翻转隐藏） */
+        .card-front {
+            background: var(--card-bg);
+            color: var(--text-dark);
+            font-size: 1.4rem;
+            transform: rotateY(180deg); /* 初始翻转到背面 */
+        }
+
+        /* 匹配成功后正面样式 */
+        .card.matched .card-front {
+            background: var(--success);
+            color: var(--text-light);
+        }
+
+        /* 匹配成功图标（默认隐藏） */
+        .match-icon {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 1rem;
+            display: none;
+        }
+
+        .card.matched .match-icon {
+            display: block;
+        }
+
+        /* 游戏结束弹窗样式 */
+        .game-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .game-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .result-modal {
+            background: var(--card-bg);
+            padding: 30px 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-title {
+            color: var(--success);
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .result-stats {
+            margin-bottom: 25px;
+            text-align: left;
+            padding-left: 15px;
+        }
+
+        .result-stat {
+            margin: 12px 0;
+            font-size: 1.05rem;
+        }
+
+        .best-record {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .result-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .result-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .play-again-btn {
+            background: var(--primary);
+            color: var(--text-light);
+        }
+
+        .play-again-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .share-btn {
+            background: var(--success);
+            color: var(--text-light);
+        }
+
+        .share-btn:hover {
+            background: #059669;
+        }
+
+        /* 动画关键帧定义 */
+        @keyframes match {
+            0%, 100% { transform: rotateY(180deg) scale(1); }
+            50% { transform: rotateY(180deg) scale(1.08); } /* 匹配时轻微放大 */
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: rotateY(180deg) translateX(0); }
+            20% { transform: rotateY(180deg) translateX(-8px); }
+            40% { transform: rotateY(180deg) translateX(8px); }
+            60% { transform: rotateY(180deg) translateX(-4px); }
+            80% { transform: rotateY(180deg) translateX(4px); } /* 失败时左右震动 */
+        }
+    </style>
+</head>
+<body>
+    <!-- 游戏头部：标题、统计、控制按钮 -->
+    <div class="game-header">
+        <h1 class="game-title">HSK6 成语对对碰</h1>
+        
+        <!-- 游戏数据统计：时间、步数、已匹配数 -->
+        <div class="game-stats">
+            <div class="stat-item">
+                <span class="stat-icon">⏱️</span>
+                <span>时间: <span id="time">00:00</span></span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">👣</span>
+                <span>步数: <span id="moves">0</span></span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">✅</span>
+                <span>匹配: <span id="matches">0</span>/12</span>
+            </div>
+        </div>
+        
+        <!-- 重新开始按钮 -->
+        <div class="game-controls">
+            <button class="reset-btn" id="reset-btn">重新开始</button>
+        </div>
+    </div>
+
+    <!-- 卡片容器：动态生成24个卡片 -->
+    <div class="game-container">
+        <div class="card-grid" id="card-grid"></div>
+    </div>
+
+    <!-- 游戏结束弹窗：结果展示、重玩、分享 -->
+    <div class="game-overlay" id="game-overlay">
+        <div class="result-modal">
+            <h2 class="result-title">恭喜完成挑战!</h2>
+            <div class="result-stats">
+                <div class="result-stat">总用时: <span id="result-time">00:00</span></div>
+                <div class="result-stat">总步数: <span id="result-moves">0</span></div>
+                <div class="result-stat best-record">最佳记录: <span id="best-record">--</span></div>
+            </div>
+            <div class="result-buttons">
+                <button class="result-btn play-again-btn" id="play-again-btn">再玩一次</button>
+                <button class="result-btn share-btn" id="share-btn">复制成绩</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. 成语数据结构：定义12个HSK6成语及拆分规则
+        const idioms = [
+            { id: 1, part1: "难能", part2: "可贵", full: "难能可贵" },
+            { id: 2, part1: "无可", part2: "奈何", full: "无可奈何" },
+            { id: 3, part1: "各抒", part2: "己见", full: "各抒己见" },
+            { id: 4, part1: "不可", part2: "思议", full: "不可思议" },
+            { id: 5, part1: "刻不", part2: "容缓", full: "刻不容缓" },
+            { id: 6, part1: "望尘", part2: "莫及", full: "望尘莫及" },
+            { id: 7, part1: "事与", part2: "愿违", full: "事与愿违" },
+            { id: 8, part1: "言简", part2: "意赅", full: "言简意赅" },
+            { id: 9, part1: "勃然", part2: "大怒", full: "勃然大怒" },
+            { id: 10, part1: "掩耳", part2: "盗铃", full: "掩耳盗铃" },
+            { id: 11, part1: "自相", part2: "矛盾", full: "自相矛盾" },
+            { id: 12, part1: "推陈", part2: "出新", full: "推陈出新" }
+        ];
+
+        // 2. 游戏状态管理：存储核心游戏数据
+        const gameState = {
+            flippedCards: [],    // 当前翻转的卡片（最多2张）
+            matchedPairs: 0,     // 已匹配的对数
+            moves: 0,            // 总步数
+            time: 0,             // 总时间（秒）
+            timerInterval: null, // 计时器定时器
+            isProcessing: false, // 是否处于匹配判定中（防止重复点击）
+            bestRecord: JSON.parse(localStorage.getItem('hskIdiomBest')) || { time: Infinity, moves: Infinity } // 本地存储最佳记录
+        };
+
+        // 3. DOM元素获取：缓存常用元素，避免重复查询
+        const elements = {
+            cardGrid: document.getElementById('card-grid'),
+            timeDisplay: document.getElementById('time'),
+            movesDisplay: document.getElementById('moves'),
+            matchesDisplay: document.getElementById('matches'),
+            resetBtn: document.getElementById('reset-btn'),
+            gameOverlay: document.getElementById('game-overlay'),
+            resultTime: document.getElementById('result-time'),
+            resultMoves: document.getElementById('result-moves'),
+            bestRecord: document.getElementById('best-record'),
+            playAgainBtn: document.getElementById('play-again-btn'),
+            shareBtn: document.getElementById('share-btn')
+        };
+
+        // 4. 工具函数：时间格式化（秒 → 分:秒）
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        }
+
+        // 5. 游戏核心逻辑：更新统计数据显示
+        function updateStats() {
+            elements.timeDisplay.textContent = formatTime(gameState.time);
+            elements.movesDisplay.textContent = gameState.moves;
+            elements.matchesDisplay.textContent = gameState.matchedPairs;
+        }
+
+        // 6. 游戏核心逻辑：开始计时器
+        function startTimer() {
+            // 清除已有定时器（防止重复）
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            // 每秒更新时间
+            gameState.timerInterval = setInterval(() => {
+                gameState.time++;
+                updateStats();
+            }, 1000);
+        }
+
+        // 7. 游戏核心逻辑：检查两张卡片是否匹配
+        function checkMatch() {
+            const [card1, card2] = gameState.flippedCards;
+            const card1Id = card1.dataset.id.split('-')[0]; // 获取卡片对应的成语ID（如"1-1" → "1"）
+            const card2Id = card2.dataset.id.split('-')[0];
+
+            // 判定规则：成语ID相同 → 匹配成功
+            if (card1Id === card2Id) {
+                // 匹配成功：添加匹配样式，标记为不可点击
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                card1.style.pointerEvents = 'none';
+                card2.style.pointerEvents = 'none';
+                // 更新匹配数
+                gameState.matchedPairs++;
+                // 重置翻转卡片数组
+                gameState.flippedCards = [];
+                gameState.isProcessing = false;
+                // 检查是否全部匹配完成
+                if (gameState.matchedPairs === 12) endGame();
+            } else {
+                // 匹配失败：
