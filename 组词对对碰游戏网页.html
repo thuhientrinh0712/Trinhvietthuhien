@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成语对对碰</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 15px;
+        }
+        
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        
+        .start-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .start-btn:hover {
+            background: #ff5252;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.6);
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card.flipped {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            transform: rotateY(180deg);
+        }
+        
+        .card.matched {
+            background: rgba(46, 204, 113, 0.8);
+            color: white;
+            cursor: default;
+        }
+        
+        .card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .card .front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            transform: rotateY(180deg);
+        }
+        
+        .matched-words {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+        }
+        
+        .matched-words h2 {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .matched-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .matched-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .matched-item:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+        
+        .vietnamese-meaning {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .win-message {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .win-content {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .win-content h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        
+        .win-content p {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .win-content button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .win-content button:hover {
+            background: #ff5252;
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>成语对对碰</h1>
+            <p>匹配成语的两个部分，学习越南语意思</p>
+        </header>
+        
+        <div class="game-info">
+            <div class="timer">00:00</div>
+            <button class="start-btn">开始游戏</button>
+        </div>
+        
+        <div class="game-board" id="gameBoard">
+            <!-- 卡片将通过JavaScript动态生成 -->
+        </div>
+        
+        <div class="matched-words">
+            <h2>已匹配成语</h2>
+            <div class="matched-list" id="matchedList">
+                <!-- 匹配成功的成语将通过JavaScript动态生成 -->
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <p>点击开始按钮后，所有汉字会显示3秒钟，然后翻转隐藏。</p>
+            <p>点击两张卡片，如果它们组成一个成语，则匹配成功。</p>
+            <p>点击已匹配的成语可以查看越南语意思。</p>
+        </div>
+    </div>
+    
+    <div class="win-message" id="winMessage">
+        <div class="win-content">
+            <h2>恭喜你！</h2>
+            <p>你成功匹配了所有成语！</p>
+            <p>用时：<span id="finalTime">00:00</span></p>
+            <button onclick="location.reload()">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        // 成语数据
+        const idioms = [
+            { chinese: "男能可贵", vietnamese: "Đáng quý ở nam giới" },
+            { chinese: "无可奈何", vietnamese: "Không thể làm gì được" },
+            { chinese: "不可思议", vietnamese: "Không thể tưởng tượng được" },
+            { chinese: "一目了然", vietnamese: "Rõ ràng ngay từ cái nhìn đầu tiên" },
+            { chinese: "刻不容缓", vietnamese: "Không thể chậm trễ" },
+            { chinese: "望尘莫及", vietnamese: "Nhìn theo bụi mà không thể theo kịp" },
+            { chinese: "事与愿违", vietnamese: "Việc trái với ý muốn" },
+            { chinese: "勃然大怒", vietnamese: "Nổi cơn thịnh nộ" },
+            { chinese: "言简意赅", vietnamese: "Lời nói ngắn gọn, ý tứ đầy đủ" },
+            { chinese: "掩耳盗铃", vietnamese: "Bịt tai trộm chuông" },
+            { chinese: "自相矛盾", vietnamese: "Tự mâu thuẫn" },
+            { chinese: "推陈出新", vietnamese: "Loại bỏ cái cũ, tạo ra cái mới" }
+        ];
+
+        // 游戏状态变量
+        let timerInterval;
+        let seconds = 0;
+        let gameStarted = false;
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let canFlip = true;
+
+        // 初始化游戏
+        function initGame() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            // 创建卡片数据
+            let cardData = [];
+            idioms.forEach(idiom => {
+                // 将每个成语拆分为两部分
+                const part1 = idiom.chinese.substring(0, 2);
+                const part2 = idiom.chinese.substring(2);
+                cardData.push({ text: part1, idiom: idiom.chinese, matched: false });
+                cardData.push({ text: part2, idiom: idiom.chinese, matched: false });
+            });
+            
+            // 洗牌算法
+            for (let i = cardData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cardData[i], cardData[j]] = [cardData[j], cardData[i]];
+            }
+            
+            // 创建卡片元素
+            cardData.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.dataset.index = index;
+                cardElement.dataset.text = card.text;
+                cardElement.dataset.idiom = card.idiom;
+                
+                const backElement = document.createElement('div');
+                backElement.className = 'back';
+                backElement.textContent = '?';
+                
+                const frontElement = document.createElement('div');
+                frontElement.className = 'front';
+                frontElement.textContent = card.text;
+                
+                cardElement.appendChild(backElement);
+                cardElement.appendChild(frontElement);
+                
+                cardElement.addEventListener('click', () => flipCard(cardElement));
+                gameBoard.appendChild(cardElement);
+            });
+            
+            // 重置游戏状态
+            flippedCards = [];
+            matchedPairs = 0;
+            canFlip = true;
+            document.getElementById('matchedList').innerHTML = '';
+        }
+
+        // 开始游戏
+        function startGame() {
+            if (gameStarted) return;
+            
+            gameStarted = true;
+            seconds = 0;
+            updateTimer();
+            
+            // 启动计时器
+            timerInterval = setInterval(() => {
+                seconds++;
+                updateTimer();
+            }, 1000);
+            
+            // 显示所有卡片3秒钟
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.classList.add('flipped');
+            });
+            
+            setTimeout(() => {
+                cards.forEach(card => {
+                    if (!card.classList.contains('matched')) {
+                        card.classList.remove('flipped');
+                    }
+                });
+                canFlip = true;
+            }, 3000);
+        }
+
+        // 更新计时器显示
+        function updateTimer() {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            document.querySelector('.timer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        // 翻转卡片
+        function flipCard(card) {
+            if (!canFlip || card.classList.contains('flipped') || card.classList.contains('matched')) {
+                return;
+            }
+            
+            card.classList.add('flipped');
+            flippedCards.push(card);
+            
+            if (flippedCards.length === 2) {
+                canFlip = false;
+                checkMatch();
+            }
+        }
+
+        // 检查是否匹配
+        function checkMatch() {
+            const card1 = flippedCards[0];
+            const card2 = flippedCards[1];
+            
+            if (card1.dataset.idiom === card2.dataset.idiom) {
+                // 匹配成功
+                setTimeout(() => {
+                    card1.classList.add('matched');
+                    card2.classList.add('matched');
+                    
+                    // 添加到已匹配列表
+                    addMatchedIdiom(card1.dataset.idiom);
+                    
+                    flippedCards = [];
+                    canFlip = true;
+                    matchedPairs++;
+                    
+                    // 检查游戏是否结束
+                    if (matchedPairs === idioms.length) {
+                        endGame();
+                    }
+                }, 500);
+            } else {
+                // 匹配失败
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                    canFlip = true;
+                }, 1000);
+            }
+        }
+
+        // 添加已匹配成语到列表
+        function addMatchedIdiom(idiom) {
+            const matchedList = document.getElementById('matchedList');
+            const idiomData = idioms.find(item => item.chinese === idiom);
+            
+            const idiomElement = document.createElement('div');
+            idiomElement.className = 'matched-item';
+            idiomElement.textContent = idiom;
+            
+            const meaningElement = document.createElement('div');
+            meaningElement.className = 'vietnamese-meaning';
+            meaningElement.textContent = idiomData.vietnamese;
+            
+            idiomElement.appendChild(meaningElement);
+            
+            idiomElement.addEventListener('click', function() {
+                const meaning = this.querySelector('.vietnamese-meaning');
+                meaning.style.display = meaning.style.display === 'block' ? 'none' : 'block';
+            });
+            
+            matchedList.appendChild(idiomElement);
+        }
+
+        // 结束游戏
+        function endGame() {
+            clearInterval(timerInterval);
+            document.getElementById('finalTime').textContent = 
+                document.querySelector('.timer').textContent;
+            document.getElementById('winMessage').style.display = 'flex';
+        }
+
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            initGame();
+            
+            // 开始按钮事件
+            document.querySelector('.start-btn').addEventListener('click', () => {
+                startGame();
+                document.querySelector('.start-btn').disabled = true;
+                document.querySelector('.start-btn').textContent = '游戏中...';
+            });
+        });
+    </script>
+</body>
+</html>
